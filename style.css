@@ -1,0 +1,353 @@
+:root{
+
+  --bg:#eef2f7;
+  --panel:#ffffff;
+  --text:#111827;
+  --border:#d1d5db;
+
+  --box:#ffffff;
+  --shadow:0 4px 15px rgba(0,0,0,0.08);
+
+  --accent:#2563eb;
+
+  --connector:#374151;
+}
+
+body.dark{
+
+  --bg:#0f172a;
+  --panel:#111827;
+  --text:#f3f4f6;
+  --border:#374151;
+
+  --box:#1f2937;
+  --shadow:0 4px 15px rgba(0,0,0,0.4);
+
+  --connector:#cbd5e1;
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial;
+  transition:0.3s;
+}
+body.dark .stage-box{
+
+  filter:
+  drop-shadow(
+  0 5px 18px rgba(0,0,0,0.45)
+  );
+}
+
+/* TOPBAR */
+
+.topbar{
+  height:70px;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+
+  padding:0 25px;
+
+  box-shadow:var(--shadow);
+}
+
+.brand{
+  font-size:20px;
+  font-weight:700;
+
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.toolbar{
+  display:flex;
+  align-items:center;
+  gap:15px;
+}
+
+.toolbar select,
+.toolbar button{
+
+  padding:10px 14px;
+
+  border-radius:10px;
+
+  border:1px solid var(--border);
+
+  background:var(--panel);
+
+  color:var(--text);
+
+  cursor:pointer;
+}
+
+/* LAYOUT */
+
+.container{
+  display:flex;
+  height:calc(100vh - 70px);
+}
+
+/* PANEL */
+
+.editor-panel{
+
+  width:33%;
+
+  background:var(--panel);
+
+  border-right:1px solid var(--border);
+
+  display:flex;
+  flex-direction:column;
+}
+
+.panel-title{
+  padding:18px;
+  font-size:18px;
+  font-weight:700;
+  border-bottom:1px solid var(--border);
+}
+
+textarea{
+  flex:1;
+  resize:none;
+  border:none;
+  outline:none;
+  padding:20px;
+  background:transparent;
+  color:var(--text);
+  font-size:14px;
+  line-height:1.7;
+  font-family:Consolas;
+  overflow-y: auto; /* Asegura scroll individual si el texto es largo */
+}
+
+/* Estilo rápido para el placeholder instructivo del nuevo panel */
+textarea::placeholder {
+  color: #9ca3af;
+  opacity: 0.6;
+}
+
+/* BOTONES */
+
+.buttons{
+  padding:20px;
+  display:flex;
+  gap:10px;
+  border-top:1px solid var(--border);
+}
+
+.buttons button{
+
+  flex:1;
+
+  padding:12px;
+
+  border:none;
+
+  border-radius:12px;
+
+  background:var(--accent);
+
+  color:white;
+
+  font-weight:600;
+
+  cursor:pointer;
+
+  transition:0.2s;
+}
+
+.buttons button:hover{
+  transform:translateY(-2px);
+}
+
+/* PREVIEW */
+
+.preview-panel{
+  flex:1;
+  overflow:auto;
+  padding:40px;
+}
+
+#diagramContainer{
+
+  background:var(--panel);
+
+  border-radius:20px;
+
+  min-height:1200px;
+
+  padding:50px;
+
+  box-shadow:var(--shadow);
+}
+
+#diagramSVG{
+  width:100%;
+  height:auto;
+}
+
+/* SVG */
+
+.stage-box{
+  fill:var(--box);
+  stroke:var(--border); /* Cambiado de #334155 a var(--border) */
+  stroke-width:1.4;
+  transition:0.3s;
+  
+}
+
+/* NUEVO: Forzar que las flechas y puntos sigan la variable del conector */
+.connector-arrow {
+  fill: var(--connector) !important;
+  transition: fill 0.3s;
+}
+
+
+.stage-text{
+
+  font-size:18px;
+
+  font-weight:800;
+
+  letter-spacing:0.3px;
+
+  fill:var(--text);
+
+  text-anchor:middle;
+
+  dominant-baseline:middle;
+}
+.connector{
+  stroke:var(--connector);
+  stroke-width:2;
+}
+
+.parameter-box{
+  stroke-width:1;
+  rx:8;
+}
+
+.parameter-text{
+  font-size:12px;
+  fill:var(--text);
+}
+
+.ingredient {
+  fill: #ecfdf5;
+  stroke: #10b981;
+}
+
+.physical {
+  fill: #fff7ed;
+  stroke: #f97316;
+}
+
+/* NUEVO: Ajuste estético para Modo Oscuro */
+body.dark .ingredient {
+  fill: #064e3b; /* Verde oscuro opaco */
+  stroke: #34d399; /* Verde esmeralda brillante */
+}
+
+body.dark .physical {
+  fill: #431407; /* Naranja/marrón oscuro opaco */
+  stroke: #fb923c; /* Naranja brillante */
+}
+
+.title-text{
+  font-size:30px;
+  font-weight:800;
+  fill:var(--text);
+}
+
+/* MENÚ CONTEXTUAL */
+
+#contextMenu{
+
+  position:absolute;
+
+  display:none;
+
+  flex-direction:column;
+
+  gap:10px;
+
+  background:var(--panel);
+
+  padding:15px;
+
+  border-radius:12px;
+
+  border:1px solid var(--border);
+
+  box-shadow:var(--shadow);
+
+  z-index:999;
+}
+
+#contextMenu label{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  font-size:13px;
+}
+
+/* ==========================================
+   MEJORAS VISUALES PROFESIONALES (PEGADO AQUÍ)
+   ========================================== */
+
+/* Mejorar interactividad en los botones principales */
+.buttons button {
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.buttons button:hover {
+  background-color: #1d4ed8 !important; /* Un azul un poco más oscuro al pasar el mouse */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.buttons button:active {
+  transform: translateY(1px);
+}
+
+/* Cambiar color del botón verde de convertir */
+#convertTextBtn {
+  transition: all 0.2s;
+}
+#convertTextBtn:hover {
+  background-color: #059669 !important; /* Verde más profesional en hover */
+}
+
+/* Customizar las barras de scroll para que se vean finas y estéticas */
+textarea::-webkit-scrollbar,
+.preview-panel::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+textarea::-webkit-scrollbar-thumb,
+.preview-panel::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+textarea::-webkit-scrollbar-track,
+.preview-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
