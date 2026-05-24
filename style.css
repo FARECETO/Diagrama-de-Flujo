@@ -1,0 +1,652 @@
+:root{
+
+  --bg:#eef2f7;
+  --panel:#ffffff;
+  --text:#111827;
+  --border:#d1d5db;
+
+  --box:#ffffff;
+  --shadow:0 4px 15px rgba(0,0,0,0.08);
+
+  --accent:#2563eb;
+
+  --connector:#374151;
+}
+
+body.dark{
+
+  --bg:#0f172a;
+  --panel:#111827;
+  --text:#f3f4f6;
+  --border:#374151;
+
+  --box:#1f2937;
+  --shadow:0 4px 15px rgba(0,0,0,0.4);
+
+  --connector:#cbd5e1;
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial;
+  transition:0.3s;
+}
+body.dark .stage-box{
+
+  filter:
+  drop-shadow(
+  0 5px 18px rgba(0,0,0,0.45)
+  );
+}
+
+/* TOPBAR */
+
+.topbar{
+  height:70px;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+
+  padding:0 25px;
+
+  box-shadow:var(--shadow);
+}
+
+.brand{
+  font-size:20px;
+  font-weight:700;
+
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.toolbar{
+  display:flex;
+  align-items:center;
+  gap:15px;
+}
+
+.toolbar select,
+.toolbar button{
+
+  padding:10px 14px;
+
+  border-radius:10px;
+
+  border:1px solid var(--border);
+
+  background:var(--panel);
+
+  color:var(--text);
+
+  cursor:pointer;
+}
+
+/* LAYOUT GENERAL RESPONSIVO */
+.app-container {
+  display: flex;
+  flex-direction: row;
+  height: calc(100vh - 70px);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* PANEL IZQUIERDO: EDITORES DE TEXTO Y JSON MÁS ANCHOS */
+.editor-panel {
+  width: 40%;
+  min-width: 380px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* CONTENEDOR DE ENTRADAS DE TEXTO Y MEDIOS */
+textarea {
+  flex: 1;
+  width: 100%;
+  resize: none;
+  border: none;
+  outline: none;
+  padding: 20px;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+  font-family: 'Consolas', monospace;
+  overflow-y: auto;
+}
+
+/* PANEL DERECHO: VISTA DEL DIAGRAMA CENTRADO PERFECTO */
+/* PANEL DERECHO: VISTA DEL DIAGRAMA CENTRADO PERFECTO */
+.preview-panel {
+  flex: 1;
+  overflow: auto;
+  padding: 30px;
+  display: flex;
+  justify-content: center; /* Centra el contenedor horizontalmente */
+  align-items: center;     /* Centra el contenedor verticalmente en PC/Laptop */
+  background: var(--bg);
+}
+
+#diagramContainer {
+  background: var(--panel);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 1050px;       /* Ancho ideal para evitar estiramientos vacíos */
+  margin: auto;            /* Auto-balance de márgenes en Flexbox */
+  display: flex;
+  flex-direction: column;
+  align-items: center;     /* Centra el SVG horizontalmente dentro del contenedor */
+  justify-content: center; /* Centra el SVG verticalmente dentro del contenedor */
+  box-sizing: border-box;
+}
+
+#diagramSVG {
+  width: 100% !important;   /* Obliga al SVG a ocupar el ancho de su contenedor */
+  height: auto !important;  /* Mantiene la proporción correcta sin distorsionar */
+  max-width: 100%;          /* Evita que se desborde a la derecha */
+  display: block;
+  margin: 0 auto;           /* Centrado absoluto */
+}
+
+/* Permitir que el título principal sea interactivo al pasar el mouse */
+#diagramTitleText {
+  cursor: pointer;
+  transition: opacity 0.2s, fill 0.2s;
+}
+
+#diagramTitleText:hover {
+  opacity: 0.7;
+}
+
+/* NUEVOS CONTROLES DE LA BARRA SUPERIOR */
+.text-modifiers {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg);
+  padding: 4px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.tool-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tool-label input[type="color"] {
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  background: none;
+}
+
+.tool-label input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+/* REGLA COMPLETA PARA MÓVILES Y TABLETS (SIN DESBORDES) */
+/* REGLA MAESTRA RESPONSIVA PARA CELULARES Y TABLETS (ANTI-DESBORDE) */
+@media (max-width: 768px) {
+  
+  /* 1. Apilar los paneles verticalmente (Editor ARRIBA, Diagrama ABAJO) */
+  .app-container {
+    flex-direction: column !important;
+    height: auto !important; 
+    overflow-y: auto !important;
+  }
+
+  /* 2. Ajustes del Editor */
+  .editor-panel {
+    width: 100% !important;
+    flex: none !important;
+    max-height: 450px; 
+    border-right: none !important;
+    border-bottom: 1px solid var(--border);
+    overflow-y: auto; 
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 3. Panel del Diagrama en móviles (Elimina anchos fijos gigantes) */
+  .preview-panel {
+    width: 100% !important;
+    flex: 1 1 auto !important;
+    height: auto !important;
+    min-height: 550px;     /* Altura mínima garantizada para ver el flujo */
+    overflow: auto !important; 
+    padding: 15px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+  }
+
+  #diagramContainer {
+    width: 100% !important; /* En móviles usa todo el ancho del dispositivo */
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 20px !important;
+  }
+
+  #diagramSVG {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* 4. Compactar la Barra Superior (Toolbar) */
+  .topbar {
+    height: auto;
+    flex-direction: column;
+    padding: 15px;
+    gap: 12px;
+  }
+  
+  .toolbar {
+    flex-direction: column;
+    height: auto !important;
+    gap: 10px;
+    padding: 10px;
+    width: 100%;
+  }
+  
+  #apiKeyInput {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+.panel-title{
+  padding:18px;
+  font-size:18px;
+  font-weight:700;
+  border-bottom:1px solid var(--border);
+}
+
+textarea{
+  flex:1;
+  resize:none;
+  border:none;
+  outline:none;
+  padding:20px;
+  background:transparent;
+  color:var(--text);
+  font-size:14px;
+  line-height:1.7;
+  font-family:Consolas;
+  overflow-y: auto; /* Asegura scroll individual si el texto es largo */
+}
+
+/* Estilo rápido para el placeholder instructivo del nuevo panel */
+textarea::placeholder {
+  color: #9ca3af;
+  opacity: 0.6;
+}
+
+/* BOTONES */
+
+.buttons{
+  padding:20px;
+  display:flex;
+  gap:10px;
+  border-top:1px solid var(--border);
+}
+
+.buttons button{
+
+  flex:1;
+
+  padding:12px;
+
+  border:none;
+
+  border-radius:12px;
+
+  background:var(--accent);
+
+  color:white;
+
+  font-weight:600;
+
+  cursor:pointer;
+
+  transition:0.2s;
+}
+
+.buttons button:hover{
+  transform:translateY(-2px);
+}
+
+/* PREVIEW */
+
+
+#diagramSVG{
+  width:100%;
+  height:auto;
+}
+
+/* SVG */
+
+.stage-box {
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.process-title {
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* NUEVO: Forzar que las flechas y puntos sigan la variable del conector */
+.connector-arrow {
+  fill: var(--connector) !important;
+  transition: fill 0.3s;
+}
+
+
+.stage-text{
+
+  font-size:18px;
+
+  font-weight:800;
+
+  letter-spacing:0.3px;
+
+  fill:var(--text);
+
+  text-anchor:middle;
+
+  dominant-baseline:middle;
+}
+.connector{
+  stroke:var(--connector);
+  stroke-width:2;
+}
+
+.parameter-box{
+  stroke-width:1;
+  rx:8;
+}
+
+.parameter-text{
+  font-size:12px;
+  fill:var(--text);
+}
+
+.ingredient {
+  fill: #ecfdf5;
+  stroke: #10b981;
+}
+
+.physical {
+  fill: #fff7ed;
+  stroke: #f97316;
+}
+
+/* NUEVO: Ajuste estético para Modo Oscuro */
+body.dark .ingredient {
+  fill: #064e3b; /* Verde oscuro opaco */
+  stroke: #34d399; /* Verde esmeralda brillante */
+}
+
+body.dark .physical {
+  fill: #431407; /* Naranja/marrón oscuro opaco */
+  stroke: #fb923c; /* Naranja brillante */
+}
+
+.title-text{
+  font-size:30px;
+  font-weight:800;
+  fill:var(--text);
+}
+
+/* MENÚ CONTEXTUAL */
+
+/* BARRA DE HERRAMIENTAS FLOTANTE ESTILO PROFESIONAL */
+.floating-toolbar {
+  position: absolute;
+  display: none; /* Se controla mediante JavaScript */
+  align-items: center;
+  gap: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 30px; /* Bordes completamente redondeados estilo moderno */
+  padding: 6px 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform: translate(-50%, -110%); /* Posiciona la barra justo encima del clic */
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+.floating-toolbar button {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.floating-toolbar button:hover {
+  background: var(--bg);
+}
+
+.floating-toolbar button.active {
+  background: var(--accent);
+  color: white;
+}
+
+.floating-toolbar label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  color: var(--text);
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.floating-toolbar label:hover {
+  background: var(--bg);
+}
+
+.floating-toolbar input[type="color"] {
+  position: absolute;
+  opacity: 0; /* Oculta el input clásico feo */
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* Cursor de selección sobre los rectángulos del SVG */
+.stage-box, .parameter-box {
+  cursor: pointer;
+  transition: filter 0.2s, stroke-width 0.2s;
+}
+
+.stage-box:hover, .parameter-box:hover {
+  filter: brightness(0.95);
+  stroke-width: 2px !important;
+}
+
+#contextMenu label{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  font-size:13px;
+}
+
+/* ==========================================
+   MEJORAS VISUALES PROFESIONALES (PEGADO AQUÍ)
+   ========================================== */
+
+/* Mejorar interactividad en los botones principales */
+.buttons button {
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.buttons button:hover {
+  background-color: #1d4ed8 !important; /* Un azul un poco más oscuro al pasar el mouse */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.buttons button:active {
+  transform: translateY(1px);
+}
+
+/* Cambiar color del botón verde de convertir */
+#convertTextBtn {
+  transition: all 0.2s;
+}
+#convertTextBtn:hover {
+  background-color: #059669 !important; /* Verde más profesional en hover */
+}
+
+/* Customizar las barras de scroll para que se vean finas y estéticas */
+textarea::-webkit-scrollbar,
+.preview-panel::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+textarea::-webkit-scrollbar-thumb,
+.preview-panel::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+textarea::-webkit-scrollbar-track,
+.preview-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ==========================================
+   SOLUCIÓN PARA CELULARES (MÓVILES)
+   ========================================== */
+
+/* Esta regla solo se activa si la pantalla mide menos de 768px de ancho */
+@media (max-width: 768px) {
+  
+  /* 1. Apilar los paneles verticalmente (Editor ARRIBA, Diagrama ABAJO) */
+  .app-container {
+    flex-direction: column !important;
+    height: auto !important; /* Permite scroll vertical de la página entera */
+    overflow-y: auto !important;
+  }
+
+  /* 2. El panel del editor ocupa todo el ancho y se ajusta */
+  .editor-panel {
+    width: 100% !important;
+    flex: none !important;
+    max-height: 450px; /* <--- Limita la altura del editor para no tapar el diagrama */
+    border-right: none !important;
+    border-bottom: 1px solid var(--border);
+    overflow-y: auto; /* Scroll individual dentro del editor si el texto es largo */
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 3. Arreglar el desborde de botones (Convertir, Generar y Exportar) */
+  .buttons {
+    display: flex;
+    flex-wrap: wrap; /* <--- IMPORTANTE: Permite que los botones pasen a la línea siguiente */
+    gap: 8px !important; /* Espacio uniforme entre botones */
+    padding: 10px 15px !important;
+    justify-content: space-between; /* Distribuye espacio */
+    margin: 0 !important;
+    width: auto !important;
+  }
+
+  /* Los botones individuales se ajustan para no salirse */
+  .buttons button {
+    flex: 1 1 calc(50% - 10px); /* Ocupan aprox. la mitad del ancho cada uno */
+    min-width: 120px;
+    margin: 0 !important;
+    font-size: 13px !important;
+    padding: 10px !important;
+  }
+
+  /* El botón de 'Convertir' y 'Generar' ocupan todo el ancho */
+  #convertTextBtn, 
+  #renderBtn {
+    flex: 1 1 100% !important;
+  }
+
+  /* 4. Arreglar el Panel del Diagrama (Se pone abajo del editor) */
+  .preview-panel {
+    width: 100% !important;
+    flex: 1 1 auto !important;
+    height: 600px !important; /* <--- Altura cómoda para ver el diagrama */
+    overflow: auto !important; /* Habilita scroll horizontal y vertical para el diagrama */
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* 5. Compactar la Barra Superior (Toolbar) */
+  .toolbar {
+    flex-direction: column;
+    height: auto !important;
+    gap: 10px;
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  
+  #apiKeyInput {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .logo-area {
+    width: 100% !important;
+    justify-content: center;
+    margin: 0 !important;
+  }
+}
