@@ -541,39 +541,58 @@ function renderDiagram(){
       boxHeight = box.rectHeight;
       const gap = 40; 
 
-      if (stage.parameters && stage.parameters.length > 0) {
+if (stage.parameters && stage.parameters.length > 0) {
+        // CORRECCIÓN: Contadores independientes por lado para mantener las flechas perfectamente rectas
+        let leftIndex = 0;
+        let rightIndex = 0;
+
+        // Contamos cuántos parámetros van a ir a cada lado en total
+        const leftCount = stage.parameters.filter(p => (p.position || stage.notes_position || "right") === "left").length;
+        const rightCount = stage.parameters.filter(p => (p.position || stage.notes_position || "right") === "right").length;
+
         stage.parameters.forEach((param, pIndex) => {
           const spacing = 52; 
-          const totalHeight = (stage.parameters.length - 1) * spacing;
+          const currentPos = param.position || stage.notes_position || "right";
+          
+          // Determinamos qué índice y conteo total usar según el lado actual
+          const sideIndex = currentPos === "left" ? leftIndex : rightIndex;
+          const sideCount = currentPos === "left" ? leftCount : rightCount;
+
+          // Calculamos la Y perfecta para este lado de forma independiente
+          const totalHeight = (sideCount - 1) * spacing;
           const startY = boxY - (totalHeight / 2);
-          const paramBoxY = startY + (pIndex * spacing) + (boxHeight / 2) - 16;
+          const paramBoxY = startY + (sideIndex * spacing) + (boxHeight / 2) - 16;
+
+          // Incrementamos el contador correspondiente al lado procesado
+          if (currentPos === "left") leftIndex++; else rightIndex++;
 
           const typeClass = param.type === "ingredient" ? "ingredient" : "physical";
           const fullText = param.label ? `${param.label}: ${param.value}` : param.value;
 
           const paramWidth = Math.max(170, fullText.length * 8 + 25); 
-          const paramX = stage.notes_position === "left"
+          const paramX = currentPos === "left"
             ? centerX - (box.rectWidth / 2) - gap - paramWidth 
-            : centerX + (box.rectWidth / 2) + gap; 
+            : centerX + (box.shadowWidth || box.rectWidth / 2) + gap; 
 
           addRect(paramX, paramBoxY, paramWidth, 32, `parameter-box ${typeClass}`);
           addText(paramX + (paramWidth / 2), paramBoxY + 19, fullText, "parameter-text", "middle");
 
-          const stageBoxEdgeX = stage.notes_position === "left" ? centerX - (box.rectWidth / 2) : centerX + (box.rectWidth / 2);
-          const paramEdgeX = stage.notes_position === "left" ? paramX + paramWidth : paramX;
+          const stageBoxEdgeX = currentPos === "left" ? centerX - (box.rectWidth / 2) : centerX + (box.rectWidth / 2);
+          const paramEdgeX = currentPos === "left" ? paramX + paramWidth : paramX;
 
-          if (stage.parameters.length === 1) {
-            // CORRECCIÓN APA 7 (Horizontal): Despeje absoluto para que la flecha flote perfectamente en medio
-            let startArrowX = stage.notes_position === "left" ? stageBoxEdgeX - 5 : stageBoxEdgeX + 5;
-            let targetX = stage.notes_position === "left" ? paramEdgeX + 6 : paramEdgeX - 6;
+          // Renderizado de flechas y troncos horizontales rectos por lado
+          if (sideCount === 1) {
+            let startArrowX = currentPos === "left" ? stageBoxEdgeX - 5 : stageBoxEdgeX + 5;
+            let targetX = currentPos === "left" ? paramEdgeX + 6 : paramEdgeX - 6;
             
+            // Dibuja una flecha perfectamente recta en el mismo eje Y del parámetro
             addArrow(startArrowX, paramBoxY + 16, targetX, paramBoxY + 16);
           } else {
-            const trunkLineX = stage.notes_position === "left" ? stageBoxEdgeX - 15 : stageBoxEdgeX + 15;
+            const trunkLineX = currentPos === "left" ? stageBoxEdgeX - 15 : stageBoxEdgeX + 15;
 
-            if (pIndex === 0) {
-              // Conector horizontal del bloque central al tronco con separación de seguridad
-              let startTrunkLineX = stage.notes_position === "left" ? stageBoxEdgeX - 5 : stageBoxEdgeX + 5;
+            // Solo dibuja el tronco de este lado en su primer elemento correspondiente
+            if (sideIndex === 0) {
+              let startTrunkLineX = currentPos === "left" ? stageBoxEdgeX - 5 : stageBoxEdgeX + 5;
               addLine(startTrunkLineX, boxY + (boxHeight / 2), trunkLineX, boxY + (boxHeight / 2));
               
               const startTrunkY = boxY + (boxHeight / 2) - (totalHeight / 2);
@@ -581,8 +600,7 @@ function renderDiagram(){
               addLine(trunkLineX, startTrunkY, trunkLineX, endTrunkY);
             }
             
-            // CORRECCIÓN APA 7 (Horizontal): Separar la punta de la flecha del recuadro del parámetro lateral
-            let targetX = stage.notes_position === "left" ? paramEdgeX + 6 : paramEdgeX - 6;
+            let targetX = currentPos === "left" ? paramEdgeX + 6 : paramEdgeX - 6;
             addArrow(trunkLineX, paramBoxY + 16, targetX, paramBoxY + 16);
           }
         });
