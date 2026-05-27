@@ -853,54 +853,70 @@ function serializeSvgWithStyles(svg) {
 
 
 /* =========================
-   EXPORTAR PNG
+   EXPORTAR PNG DE ALTA RESOLUCIÓN (4X CON RECORTE)
 ========================= */
-
-function getSvgSize(svg) {
-  const rect = svg.getBoundingClientRect();
-
-  return {
-    width: rect.width,
-    height: rect.height
-  };
-}
 
 async function exportPNG() {
   const svg = document.getElementById("diagramSVG");
 
-  const source = serializeSvgWithStyles(svg);
+  // 1. Obtener los límites reales del contenido del diagrama (Elimina espacios en blanco)
+  const bbox = svg.getBBox();
+  const margin = 40; // Margen estético de cortesía para que no quede pegado al borde
 
-  const blob = new Blob([source], {
-    type: "image/svg+xml;charset=utf-8"
-  });
+  const cropX = bbox.x - margin;
+  const cropY = bbox.y - margin;
+  const cropWidth = bbox.width + (margin * 2);
+  const cropHeight = bbox.height + (margin * 2);
 
+  // 2. Clonar temporalmente el SVG para modificar sus dimensiones sin alterar la pantalla
+  const svgClone = svg.cloneNode(true);
+  svgClone.setAttribute("viewBox", `${cropX} ${cropY} ${cropWidth} ${cropHeight}`);
+  svgClone.setAttribute("width", cropWidth);
+  svgClone.setAttribute("height", cropHeight);
+
+  // 3. Serializar el clon con sus estilos CSS actuales
+  const source = serializeSvgWithStyles(svgClone);
+
+  // 4. Crear un Blob y una URL para la imagen vectorial
+  const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
   const url = URL.createObjectURL(blob);
 
+  // 5. Crear el elemento de imagen temporal
   const img = new Image();
   img.crossOrigin = "anonymous";
 
   img.onload = () => {
-    const rect = svg.getBoundingClientRect();
+    // RESOLUCIÓN PROFESIONAL (ESCALA DE SUPERMUESTREO)
+    const scale = 4; 
 
-    const scale = 4;
-
+    // 6. Crear el Canvas basado únicamente en el tamaño del área recortada
     const canvas = document.createElement("canvas");
-
-    canvas.width = rect.width * scale;
-    canvas.height = rect.height * scale;
+    canvas.width = cropWidth * scale;
+    canvas.height = cropHeight * scale;
 
     const ctx = canvas.getContext("2d");
-
     ctx.scale(scale, scale);
 
+    // Pintar fondo blanco sólido del tamaño exacto del diagrama
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, rect.width, rect.height);
+    ctx.fillRect(0, 0, cropWidth, cropHeight);
 
-    ctx.drawImage(img, 0, 0, rect.width, rect.height);
+    // Dibujar el SVG recortado
+    ctx.drawImage(img, 0, 0, cropWidth, cropHeight);
 
+    // Obtener nombre dinámico del proceso de forma segura
+    let fileName = "diagrama";
+    if (typeof currentData !== "undefined" && currentData.process_name) {
+      fileName = currentData.process_name;
+    } else if (document.getElementById("processTitle")) {
+      fileName = document.getElementById("processTitle").textContent || "diagrama";
+    }
+    fileName = fileName.replace(/[/\\?%*:|"<>]/g, '-');
+
+    // 7. Descargar la imagen perfectamente ajustada
     const a = document.createElement("a");
-    a.download = "diagrama.png";
-    a.href = canvas.toDataURL("image/png");
+    a.download = `${fileName}.png`;
+    a.href = canvas.toDataURL("image/png", 1.0);
     a.click();
 
     setTimeout(() => URL.revokeObjectURL(url), 500);
@@ -911,45 +927,53 @@ async function exportPNG() {
 
 
 /* =========================
-   EXPORTAR PDF
+   EXPORTAR PDF DE ALTA RESOLUCIÓN (AJUSTE A4 CON RECORTE)
 ========================= */
 
 async function exportPDF() {
   const svg = document.getElementById("diagramSVG");
 
-  const source = serializeSvgWithStyles(svg);
+  // 1. Obtener los límites reales del contenido del diagrama (Elimina espacios en blanco)
+  const bbox = svg.getBBox();
+  const margin = 40; 
 
-  const blob = new Blob([source], {
-    type: "image/svg+xml;charset=utf-8"
-  });
+  const cropX = bbox.x - margin;
+  const cropY = bbox.y - margin;
+  const cropWidth = bbox.width + (margin * 2);
+  const cropHeight = bbox.height + (margin * 2);
 
+  // 2. Clonar el SVG para aplicar el recorte en el PDF
+  const svgClone = svg.cloneNode(true);
+  svgClone.setAttribute("viewBox", `${cropX} ${cropY} ${cropWidth} ${cropHeight}`);
+  svgClone.setAttribute("width", cropWidth);
+  svgClone.setAttribute("height", cropHeight);
+
+  const source = serializeSvgWithStyles(svgClone);
+
+  const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
   const url = URL.createObjectURL(blob);
 
   const img = new Image();
+  img.crossOrigin = "anonymous";
 
   img.onload = () => {
-    const rect = svg.getBoundingClientRect();
-
-    const scale = 4;
+    const scale = 4; 
 
     const canvas = document.createElement("canvas");
-
-    canvas.width = rect.width * scale;
-    canvas.height = rect.height * scale;
+    canvas.width = cropWidth * scale;
+    canvas.height = cropHeight * scale;
 
     const ctx = canvas.getContext("2d");
-
     ctx.scale(scale, scale);
 
     ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, rect.width, rect.height);
+    ctx.fillRect(0, 0, cropWidth, cropHeight);
 
-    ctx.drawImage(img, 0, 0, rect.width, rect.height);
+    ctx.drawImage(img, 0, 0, cropWidth, cropHeight);
 
-    const imgData = canvas.toDataURL("image/png");
+    const imgData = canvas.toDataURL("image/png", 1.0);
 
     const { jsPDF } = window.jspdf;
-
     const pdf = new jsPDF({
       unit: "mm",
       format: "a4"
@@ -958,30 +982,37 @@ async function exportPDF() {
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
-    const imgHeightMM = (rect.height * pageWidth) / rect.width;
+    // Calcular la altura proporcional basándose en el ancho ajustado (cropWidth)
+    const imgHeightMM = (cropHeight * pageWidth) / cropWidth;
 
     let heightLeft = imgHeightMM;
     let position = 0;
 
-    pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeightMM);
-
+    pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeightMM, undefined, 'FAST');
     heightLeft -= pageHeight;
 
     while (heightLeft > 0) {
-      position -= pageHeight;
+      position = heightLeft - imgHeightMM;
       pdf.addPage();
-      pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeightMM);
+      pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeightMM, undefined, 'FAST');
       heightLeft -= pageHeight;
     }
 
-    pdf.save("diagrama.pdf");
+    let fileName = "diagrama";
+    if (typeof currentData !== "undefined" && currentData.process_name) {
+      fileName = currentData.process_name;
+    } else if (document.getElementById("processTitle")) {
+      fileName = document.getElementById("processTitle").textContent || "diagrama";
+    }
+    fileName = fileName.replace(/[/\\?%*:|"<>]/g, '-');
+
+    pdf.save(`${fileName}.pdf`);
 
     setTimeout(() => URL.revokeObjectURL(url), 500);
   };
 
   img.src = url;
 }
-
 
 // Cerrar menús alternativos de forma limpia al hacer clic en el fondo de la pantalla
 window.addEventListener("click", () => {
