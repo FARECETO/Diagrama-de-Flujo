@@ -858,7 +858,7 @@ function serializeSvgWithStyles(svg) {
 
 
 /* =========================
-   EXPORTAR PNG DE ALTA RESOLUCIÓN (4K INTELIGENTE)
+   EXPORTAR PNG DE ALTA RESOLUCIÓN (4K INTELIGENTE - DETECCIÓN MODO OSCURO)
 ========================= */
 
 async function exportPNG() {
@@ -880,31 +880,61 @@ async function exportPNG() {
   svgClone.setAttribute("height", cropHeight);
 
   // =========================================================
-  // CORRECCIÓN DE COLORES DINÁMICOS PARA EXPORTACIÓN
+  // DETECCIÓN Y TRADUCCIÓN INTELIGENTE DE COLORES (MODO OSCURO -> IMPRESIÓN)
   // =========================================================
-  // En lugar de sobreescribir con valores fijos, leemos elemento por elemento 
-  // del SVG original y le pasamos sus colores exactos al clon.
   const originalElements = svg.querySelectorAll('.stage-box, .parameter-box, text, line, path, .connector-line, .arrow-head');
   const clonedElements = svgClone.querySelectorAll('.stage-box, .parameter-box, text, line, path, .connector-line, .arrow-head');
+
+  // Detectar si el sistema entero está actualmente en modo oscuro
+  const isDarkMode = document.body.classList.contains('dark');
 
   originalElements.forEach((origEl, idx) => {
     const cloneEl = clonedElements[idx];
     if (cloneEl) {
-      // Copiar estilos computados de color en pantalla directamente al archivo de descarga
       const computedStyle = window.getComputedStyle(origEl);
       
+      // CASO 1: TEXTOS
       if (origEl.tagName === 'text') {
-        cloneEl.style.fill = origEl.style.fill || computedStyle.fill || '#111827';
-      } else if (origEl.tagName === 'line' || origEl.tagName === 'path' || origEl.classList.contains('connector-line')) {
-        // Si estás en modo oscuro, las líneas son claras; forzamos a que sean oscuras para el fondo blanco del papel
+        if (origEl.style.fill) {
+          // Si el usuario le puso un color propio con la barra, se respeta
+          cloneEl.style.fill = origEl.style.fill;
+        } else {
+          // Si no tiene color personalizado, forzar gris oscuro para que sea legible en papel blanco
+          cloneEl.style.fill = '#111827';
+        }
+      } 
+      // CASO 2: LÍNEAS, FLECHAS Y CONECTORES
+      else if (origEl.tagName === 'line' || origEl.tagName === 'path' || origEl.classList.contains('connector-line')) {
+        // Forzar líneas oscuras para que se vean sobre el papel blanco de la exportación
         cloneEl.style.stroke = '#374151';
-        if (cloneEl.classList.contains('arrow-head')) {
+        if (cloneEl.classList.contains('arrow-head') || origEl.getAttribute('fill') === 'currentColor') {
           cloneEl.style.fill = '#374151';
         }
-      } else {
-        // Cajas de etapas y ramificaciones: respetan el color exacto que les pusiste con la barra
-        cloneEl.style.fill = origEl.style.fill || origEl.getAttribute('fill') || computedStyle.fill;
-        cloneEl.style.stroke = origEl.style.stroke || origEl.getAttribute('stroke') || computedStyle.stroke;
+      } 
+      // CASO 3: RECTÁNGULOS Y CAJAS (STAGES Y PARAMETERS)
+      else {
+        if (origEl.style.fill) {
+          // Si el usuario usó la barra de herramientas, mantenemos su color personalizado intacto
+          cloneEl.style.fill = origEl.style.fill;
+          cloneEl.style.stroke = origEl.style.stroke || origEl.getAttribute('stroke');
+        } else {
+          // Si no está personalizado y la app está en modo oscuro, convertimos el fondo a modo claro
+          if (isDarkMode) {
+            if (origEl.classList.contains('parameter-box')) {
+              // Ramificaciones por defecto: Fondo blanco y borde blanco
+              cloneEl.style.fill = '#ffffff';
+              cloneEl.style.stroke = '#ffffff';
+            } else {
+              // Cajas de etapas por defecto: Fondo blanco y borde gris suave
+              cloneEl.style.fill = '#ffffff';
+              cloneEl.style.stroke = '#d1d5db';
+            }
+          } else {
+            // Si ya estaba en modo claro, dejamos los colores computados normales de la pantalla
+            cloneEl.style.fill = computedStyle.fill;
+            cloneEl.style.stroke = computedStyle.stroke;
+          }
+        }
       }
     }
   });
@@ -920,7 +950,7 @@ async function exportPNG() {
   img.crossOrigin = "anonymous";
 
   img.onload = () => {
-    // RESOLUCIÓN PROFESIONAL INDESTRUCTIBLE 4K (4X)
+    // RESOLUCIÓN 4K FULL HD MÁXIMA GARANTIZADA
     const scale = 4; 
 
     const canvas = document.createElement("canvas");
@@ -930,11 +960,11 @@ async function exportPNG() {
     const ctx = canvas.getContext("2d");
     ctx.scale(scale, scale);
 
-    // Pintar fondo blanco sólido debajo del diagrama
+    // Fondo blanco sólido para el archivo final
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, cropWidth, cropHeight);
 
-    // Dibujar el SVG
+    // Dibujar el SVG limpio
     ctx.drawImage(img, 0, 0, cropWidth, cropHeight);
 
     let fileName = "diagrama";
@@ -958,7 +988,7 @@ async function exportPNG() {
 
 
 /* =========================
-   EXPORTAR PDF DE ALTA RESOLUCIÓN (4K INTELIGENTE)
+   EXPORTAR PDF DE ALTA RESOLUCIÓN (4K INTELIGENTE - DETECCIÓN MODO OSCURO)
 ========================= */
 
 async function exportPDF() {
@@ -979,9 +1009,11 @@ async function exportPDF() {
   svgClone.setAttribute("width", cropWidth);
   svgClone.setAttribute("height", cropHeight);
 
-  // PARCHE DE TRANSLACIÓN DE COLORES DINÁMICOS PARA PDF
+  // TRANSLACIÓN DE COLORES DINÁMICOS PARA PDF
   const originalElements = svg.querySelectorAll('.stage-box, .parameter-box, text, line, path, .connector-line, .arrow-head');
   const clonedElements = svgClone.querySelectorAll('.stage-box, .parameter-box, text, line, path, .connector-line, .arrow-head');
+
+  const isDarkMode = document.body.classList.contains('dark');
 
   originalElements.forEach((origEl, idx) => {
     const cloneEl = clonedElements[idx];
@@ -989,15 +1021,34 @@ async function exportPDF() {
       const computedStyle = window.getComputedStyle(origEl);
       
       if (origEl.tagName === 'text') {
-        cloneEl.style.fill = origEl.style.fill || computedStyle.fill || '#111827';
+        if (origEl.style.fill) {
+          cloneEl.style.fill = origEl.style.fill;
+        } else {
+          cloneEl.style.fill = '#111827';
+        }
       } else if (origEl.tagName === 'line' || origEl.tagName === 'path' || origEl.classList.contains('connector-line')) {
         cloneEl.style.stroke = '#374151';
-        if (cloneEl.classList.contains('arrow-head')) {
+        if (cloneEl.classList.contains('arrow-head') || origEl.getAttribute('fill') === 'currentColor') {
           cloneEl.style.fill = '#374151';
         }
       } else {
-        cloneEl.style.fill = origEl.style.fill || origEl.getAttribute('fill') || computedStyle.fill;
-        cloneEl.style.stroke = origEl.style.stroke || origEl.getAttribute('stroke') || computedStyle.stroke;
+        if (origEl.style.fill) {
+          cloneEl.style.fill = origEl.style.fill;
+          cloneEl.style.stroke = origEl.style.stroke || origEl.getAttribute('stroke');
+        } else {
+          if (isDarkMode) {
+            if (origEl.classList.contains('parameter-box')) {
+              cloneEl.style.fill = '#ffffff';
+              cloneEl.style.stroke = '#ffffff';
+            } else {
+              cloneEl.style.fill = '#ffffff';
+              cloneEl.style.stroke = '#d1d5db';
+            }
+          } else {
+            cloneEl.style.fill = computedStyle.fill;
+            cloneEl.style.stroke = computedStyle.stroke;
+          }
+        }
       }
     }
   });
@@ -1066,6 +1117,7 @@ async function exportPDF() {
 
   img.src = url;
 }
+
 // Cerrar menús alternativos de forma limpia al hacer clic en el fondo de la pantalla
 window.addEventListener("click", () => {
   const oldMenu = document.getElementById("contextMenu");
