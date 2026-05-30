@@ -853,7 +853,7 @@ function serializeSvgWithStyles(svg) {
 
 
 /* =========================
-   EXPORTAR PNG DE ALTA RESOLUCIÓN (4X CON RECORTE)
+   EXPORTAR PNG DE ALTA RESOLUCIÓN (4K CON RECORTE Y FORZADO MODO CLARO)
 ========================= */
 
 async function exportPNG() {
@@ -861,7 +861,7 @@ async function exportPNG() {
 
   // 1. Obtener los límites reales del contenido del diagrama (Elimina espacios en blanco)
   const bbox = svg.getBBox();
-  const margin = 40; // Margen estético de cortesía para que no quede pegado al borde
+  const margin = 40; // Margen estético para que no quede pegado al borde
 
   const cropX = bbox.x - margin;
   const cropY = bbox.y - margin;
@@ -874,7 +874,23 @@ async function exportPNG() {
   svgClone.setAttribute("width", cropWidth);
   svgClone.setAttribute("height", cropHeight);
 
-  // 3. Serializar el clon con sus estilos CSS actuales
+  // =========================================================
+  // TRUCO MAESTRO: FORZAR MODO CLARO PARA IMPRESIÓN IMPRERDIBLE
+  // =========================================================
+  // Añadimos un bloque de estilos CSS inyectado directo al clon para obligar
+  // a todos los elementos a usar colores oscuros sobre el fondo blanco del Canvas.
+  const styleOverride = document.createElementNS("http://www.w3.org/2000/svg", "style");
+  styleOverride.textContent = `
+    svg, text, .stage-text, .parameter-text { fill: #111827 !important; color: #111827 !important; }
+    line, path, .connector-line, .arrow-head { stroke: #374151 !important; fill: none; }
+    .arrow-head { fill: #374151 !important; }
+    .stage-box { fill: #ffffff !important; stroke: #d1d5db !important; }
+    .parameter-box.ingredient { fill: #f0fdf4 !important; stroke: #bbf7d0 !important; }
+    .parameter-box.physical { fill: #fff7ed !important; stroke: #ffedd5 !important; }
+  `;
+  svgClone.insertBefore(styleOverride, svgClone.firstChild);
+
+  // 3. Serializar el clon con sus estilos inyectados
   const source = serializeSvgWithStyles(svgClone);
 
   // 4. Crear un Blob y una URL para la imagen vectorial
@@ -886,7 +902,7 @@ async function exportPNG() {
   img.crossOrigin = "anonymous";
 
   img.onload = () => {
-    // RESOLUCIÓN PROFESIONAL (ESCALA DE SUPERMUESTREO)
+    // MANTENEMOS LA ULTRA ALTA RESOLUCIÓN 4K ORIGINAL (ESCALA 4X)
     const scale = 4; 
 
     // 6. Crear el Canvas basado únicamente en el tamaño del área recortada
@@ -927,7 +943,7 @@ async function exportPNG() {
 
 
 /* =========================
-   EXPORTAR PDF DE ALTA RESOLUCIÓN (AJUSTE A4 CON RECORTE)
+   EXPORTAR PDF DE ALTA RESOLUCIÓN (AJUSTE A4 CON RECORTE Y FORZADO MODO CLARO)
 ========================= */
 
 async function exportPDF() {
@@ -948,6 +964,18 @@ async function exportPDF() {
   svgClone.setAttribute("width", cropWidth);
   svgClone.setAttribute("height", cropHeight);
 
+  // INYECTAR PARCHE DE MODO CLARO PARA EL CLON EN PDF
+  const styleOverride = document.createElementNS("http://www.w3.org/2000/svg", "style");
+  styleOverride.textContent = `
+    svg, text, .stage-text, .parameter-text { fill: #111827 !important; color: #111827 !important; }
+    line, path, .connector-line, .arrow-head { stroke: #374151 !important; fill: none; }
+    .arrow-head { fill: #374151 !important; }
+    .stage-box { fill: #ffffff !important; stroke: #d1d5db !important; }
+    .parameter-box.ingredient { fill: #f0fdf4 !important; stroke: #bbf7d0 !important; }
+    .parameter-box.physical { fill: #fff7ed !important; stroke: #ffedd5 !important; }
+  `;
+  svgClone.insertBefore(styleOverride, svgClone.firstChild);
+
   const source = serializeSvgWithStyles(svgClone);
 
   const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
@@ -957,6 +985,7 @@ async function exportPDF() {
   img.crossOrigin = "anonymous";
 
   img.onload = () => {
+    // MANTENEMOS LA ULTRA ALTA RESOLUCIÓN 4K ORIGINAL (ESCALA 4X)
     const scale = 4; 
 
     const canvas = document.createElement("canvas");
