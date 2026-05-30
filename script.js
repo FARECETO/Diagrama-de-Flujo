@@ -542,11 +542,9 @@ function renderDiagram(){
       const gap = 40; 
 
 if (stage.parameters && stage.parameters.length > 0) {
-        // CORRECCIÓN: Contadores independientes por lado para mantener las flechas perfectamente rectas
         let leftIndex = 0;
         let rightIndex = 0;
 
-        // Contamos cuántos parámetros van a ir a cada lado en total
         const leftCount = stage.parameters.filter(p => (p.position || stage.notes_position || "right") === "left").length;
         const rightCount = stage.parameters.filter(p => (p.position || stage.notes_position || "right") === "right").length;
 
@@ -554,16 +552,13 @@ if (stage.parameters && stage.parameters.length > 0) {
           const spacing = 52; 
           const currentPos = param.position || stage.notes_position || "right";
           
-          // Determinamos qué índice y conteo total usar según el lado actual
           const sideIndex = currentPos === "left" ? leftIndex : rightIndex;
           const sideCount = currentPos === "left" ? leftCount : rightCount;
 
-          // Calculamos la Y perfecta para este lado de forma independiente
           const totalHeight = (sideCount - 1) * spacing;
           const startY = boxY - (totalHeight / 2);
           const paramBoxY = startY + (sideIndex * spacing) + (boxHeight / 2) - 16;
 
-          // Incrementamos el contador correspondiente al lado procesado
           if (currentPos === "left") leftIndex++; else rightIndex++;
 
           const typeClass = param.type === "ingredient" ? "ingredient" : "physical";
@@ -574,23 +569,33 @@ if (stage.parameters && stage.parameters.length > 0) {
             ? centerX - (box.rectWidth / 2) - gap - paramWidth 
             : centerX + (box.shadowWidth || box.rectWidth / 2) + gap; 
 
-          addRect(paramX, paramBoxY, paramWidth, 32, `parameter-box ${typeClass}`);
-          addText(paramX + (paramWidth / 2), paramBoxY + 19, fullText, "parameter-text", "middle");
+          // MEJORA: Forzamos el fondo y borde blanco directamente en la creación del SVG
+          // Esto permite que el menú de herramientas flotante funcione si deseas cambiar el color después.
+          const rectEl = addRect(paramX, paramBoxY, paramWidth, 32, `parameter-box ${typeClass}`);
+          if (rectEl) {
+            rectEl.setAttribute("fill", "#ffffff");
+            rectEl.setAttribute("stroke", "#ffffff");
+            rectEl.style.fill = "#ffffff";
+            rectEl.style.stroke = "#ffffff";
+          }
+
+          // Forzamos el color de texto inicial a gris oscuro elegante para que sea visible
+          const textEl = addText(paramX + (paramWidth / 2), paramBoxY + 19, fullText, "parameter-text", "middle");
+          if (textEl) {
+            textEl.setAttribute("fill", "#111827");
+            textEl.style.fill = "#111827";
+          }
 
           const stageBoxEdgeX = currentPos === "left" ? centerX - (box.rectWidth / 2) : centerX + (box.rectWidth / 2);
           const paramEdgeX = currentPos === "left" ? paramX + paramWidth : paramX;
 
-          // Renderizado de flechas y troncos horizontales rectos por lado
           if (sideCount === 1) {
             let startArrowX = currentPos === "left" ? stageBoxEdgeX - 5 : stageBoxEdgeX + 5;
             let targetX = currentPos === "left" ? paramEdgeX + 6 : paramEdgeX - 6;
-            
-            // Dibuja una flecha perfectamente recta en el mismo eje Y del parámetro
             addArrow(startArrowX, paramBoxY + 16, targetX, paramBoxY + 16);
           } else {
             const trunkLineX = currentPos === "left" ? stageBoxEdgeX - 15 : stageBoxEdgeX + 15;
 
-            // Solo dibuja el tronco de este lado en su primer elemento correspondiente
             if (sideIndex === 0) {
               let startTrunkLineX = currentPos === "left" ? stageBoxEdgeX - 5 : stageBoxEdgeX + 5;
               addLine(startTrunkLineX, boxY + (boxHeight / 2), trunkLineX, boxY + (boxHeight / 2));
@@ -853,7 +858,7 @@ function serializeSvgWithStyles(svg) {
 
 
 /* =========================
-   EXPORTAR PNG DE ALTA RESOLUCIÓN (4K CON RECORTE Y FORZADO MODO CLARO)
+   EXPORTAR PNG DE ALTA RESOLUCIÓN (4K INTELIGENTE)
 ========================= */
 
 async function exportPNG() {
@@ -861,7 +866,7 @@ async function exportPNG() {
 
   // 1. Obtener los límites reales del contenido del diagrama (Elimina espacios en blanco)
   const bbox = svg.getBBox();
-  const margin = 40; // Margen estético para que no quede pegado al borde
+  const margin = 40; 
 
   const cropX = bbox.x - margin;
   const cropY = bbox.y - margin;
@@ -875,37 +880,49 @@ async function exportPNG() {
   svgClone.setAttribute("height", cropHeight);
 
   // =========================================================
-  // TRUCO MAESTRO: FORZAR MODO CLARO PARA IMPRESIÓN IMPRERDIBLE
+  // CORRECCIÓN DE COLORES DINÁMICOS PARA EXPORTACIÓN
   // =========================================================
-  // Añadimos un bloque de estilos CSS inyectado directo al clon para obligar
-  // a todos los elementos a usar colores oscuros sobre el fondo blanco del Canvas.
-  const styleOverride = document.createElementNS("http://www.w3.org/2000/svg", "style");
-  styleOverride.textContent = `
-    svg, text, .stage-text, .parameter-text { fill: #111827 !important; color: #111827 !important; }
-    line, path, .connector-line, .arrow-head { stroke: #374151 !important; fill: none; }
-    .arrow-head { fill: #374151 !important; }
-    .stage-box { fill: #ffffff !important; stroke: #d1d5db !important; }
-    .parameter-box.ingredient { fill: #f0fdf4 !important; stroke: #bbf7d0 !important; }
-    .parameter-box.physical { fill: #fff7ed !important; stroke: #ffedd5 !important; }
-  `;
-  svgClone.insertBefore(styleOverride, svgClone.firstChild);
+  // En lugar de sobreescribir con valores fijos, leemos elemento por elemento 
+  // del SVG original y le pasamos sus colores exactos al clon.
+  const originalElements = svg.querySelectorAll('.stage-box, .parameter-box, text, line, path, .connector-line, .arrow-head');
+  const clonedElements = svgClone.querySelectorAll('.stage-box, .parameter-box, text, line, path, .connector-line, .arrow-head');
 
-  // 3. Serializar el clon con sus estilos inyectados
+  originalElements.forEach((origEl, idx) => {
+    const cloneEl = clonedElements[idx];
+    if (cloneEl) {
+      // Copiar estilos computados de color en pantalla directamente al archivo de descarga
+      const computedStyle = window.getComputedStyle(origEl);
+      
+      if (origEl.tagName === 'text') {
+        cloneEl.style.fill = origEl.style.fill || computedStyle.fill || '#111827';
+      } else if (origEl.tagName === 'line' || origEl.tagName === 'path' || origEl.classList.contains('connector-line')) {
+        // Si estás en modo oscuro, las líneas son claras; forzamos a que sean oscuras para el fondo blanco del papel
+        cloneEl.style.stroke = '#374151';
+        if (cloneEl.classList.contains('arrow-head')) {
+          cloneEl.style.fill = '#374151';
+        }
+      } else {
+        // Cajas de etapas y ramificaciones: respetan el color exacto que les pusiste con la barra
+        cloneEl.style.fill = origEl.style.fill || origEl.getAttribute('fill') || computedStyle.fill;
+        cloneEl.style.stroke = origEl.style.stroke || origEl.getAttribute('stroke') || computedStyle.stroke;
+      }
+    }
+  });
+
+  // 3. Serializar el clon corregido
   const source = serializeSvgWithStyles(svgClone);
 
   // 4. Crear un Blob y una URL para la imagen vectorial
   const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
   const url = URL.createObjectURL(blob);
 
-  // 5. Crear el elemento de imagen temporal
   const img = new Image();
   img.crossOrigin = "anonymous";
 
   img.onload = () => {
-    // MANTENEMOS LA ULTRA ALTA RESOLUCIÓN 4K ORIGINAL (ESCALA 4X)
+    // RESOLUCIÓN PROFESIONAL INDESTRUCTIBLE 4K (4X)
     const scale = 4; 
 
-    // 6. Crear el Canvas basado únicamente en el tamaño del área recortada
     const canvas = document.createElement("canvas");
     canvas.width = cropWidth * scale;
     canvas.height = cropHeight * scale;
@@ -913,14 +930,13 @@ async function exportPNG() {
     const ctx = canvas.getContext("2d");
     ctx.scale(scale, scale);
 
-    // Pintar fondo blanco sólido del tamaño exacto del diagrama
+    // Pintar fondo blanco sólido debajo del diagrama
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, cropWidth, cropHeight);
 
-    // Dibujar el SVG recortado
+    // Dibujar el SVG
     ctx.drawImage(img, 0, 0, cropWidth, cropHeight);
 
-    // Obtener nombre dinámico del proceso de forma segura
     let fileName = "diagrama";
     if (typeof currentData !== "undefined" && currentData.process_name) {
       fileName = currentData.process_name;
@@ -929,7 +945,6 @@ async function exportPNG() {
     }
     fileName = fileName.replace(/[/\\?%*:|"<>]/g, '-');
 
-    // 7. Descargar la imagen perfectamente ajustada
     const a = document.createElement("a");
     a.download = `${fileName}.png`;
     a.href = canvas.toDataURL("image/png", 1.0);
@@ -943,13 +958,13 @@ async function exportPNG() {
 
 
 /* =========================
-   EXPORTAR PDF DE ALTA RESOLUCIÓN (AJUSTE A4 CON RECORTE Y FORZADO MODO CLARO)
+   EXPORTAR PDF DE ALTA RESOLUCIÓN (4K INTELIGENTE)
 ========================= */
 
 async function exportPDF() {
   const svg = document.getElementById("diagramSVG");
 
-  // 1. Obtener los límites reales del contenido del diagrama (Elimina espacios en blanco)
+  // 1. Obtener los límites reales del contenido del diagrama
   const bbox = svg.getBBox();
   const margin = 40; 
 
@@ -964,17 +979,28 @@ async function exportPDF() {
   svgClone.setAttribute("width", cropWidth);
   svgClone.setAttribute("height", cropHeight);
 
-  // INYECTAR PARCHE DE MODO CLARO PARA EL CLON EN PDF
-  const styleOverride = document.createElementNS("http://www.w3.org/2000/svg", "style");
-  styleOverride.textContent = `
-    svg, text, .stage-text, .parameter-text { fill: #111827 !important; color: #111827 !important; }
-    line, path, .connector-line, .arrow-head { stroke: #374151 !important; fill: none; }
-    .arrow-head { fill: #374151 !important; }
-    .stage-box { fill: #ffffff !important; stroke: #d1d5db !important; }
-    .parameter-box.ingredient { fill: #f0fdf4 !important; stroke: #bbf7d0 !important; }
-    .parameter-box.physical { fill: #fff7ed !important; stroke: #ffedd5 !important; }
-  `;
-  svgClone.insertBefore(styleOverride, svgClone.firstChild);
+  // PARCHE DE TRANSLACIÓN DE COLORES DINÁMICOS PARA PDF
+  const originalElements = svg.querySelectorAll('.stage-box, .parameter-box, text, line, path, .connector-line, .arrow-head');
+  const clonedElements = svgClone.querySelectorAll('.stage-box, .parameter-box, text, line, path, .connector-line, .arrow-head');
+
+  originalElements.forEach((origEl, idx) => {
+    const cloneEl = clonedElements[idx];
+    if (cloneEl) {
+      const computedStyle = window.getComputedStyle(origEl);
+      
+      if (origEl.tagName === 'text') {
+        cloneEl.style.fill = origEl.style.fill || computedStyle.fill || '#111827';
+      } else if (origEl.tagName === 'line' || origEl.tagName === 'path' || origEl.classList.contains('connector-line')) {
+        cloneEl.style.stroke = '#374151';
+        if (cloneEl.classList.contains('arrow-head')) {
+          cloneEl.style.fill = '#374151';
+        }
+      } else {
+        cloneEl.style.fill = origEl.style.fill || origEl.getAttribute('fill') || computedStyle.fill;
+        cloneEl.style.stroke = origEl.style.stroke || origEl.getAttribute('stroke') || computedStyle.stroke;
+      }
+    }
+  });
 
   const source = serializeSvgWithStyles(svgClone);
 
@@ -985,7 +1011,6 @@ async function exportPDF() {
   img.crossOrigin = "anonymous";
 
   img.onload = () => {
-    // MANTENEMOS LA ULTRA ALTA RESOLUCIÓN 4K ORIGINAL (ESCALA 4X)
     const scale = 4; 
 
     const canvas = document.createElement("canvas");
@@ -1011,7 +1036,6 @@ async function exportPDF() {
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
-    // Calcular la altura proporcional basándose en el ancho ajustado (cropWidth)
     const imgHeightMM = (cropHeight * pageWidth) / cropWidth;
 
     let heightLeft = imgHeightMM;
@@ -1042,7 +1066,6 @@ async function exportPDF() {
 
   img.src = url;
 }
-
 // Cerrar menús alternativos de forma limpia al hacer clic en el fondo de la pantalla
 window.addEventListener("click", () => {
   const oldMenu = document.getElementById("contextMenu");
